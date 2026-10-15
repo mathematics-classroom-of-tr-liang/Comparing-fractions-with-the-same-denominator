@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>同分母分數比大小特訓營</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&display=swap');
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .fraction-line {
+      border-top: 3px solid #1e293b;
+    }
+    .canvas-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .canvas-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+    .canvas-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    .slice-path {
+      transition: fill 0.15s ease, transform 0.15s ease, stroke 0.15s ease;
+      cursor: pointer;
+    }
+    .slice-path:hover {
+      filter: brightness(0.92);
+    }
+    .active-symbol-btn {
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.4);
+      transform: scale(1.05);
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col justify-between p-2 md:p-4">
+
+  <!-- 頂部標題與三單元頁籤 -->
+  <header class="bg-white rounded-2xl shadow-sm p-3 md:p-4 mb-3 flex flex-col xl:flex-row justify-between items-center gap-3 border-b-4 border-indigo-600">
+    <div class="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-start">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow">
+          <i class="fa-solid fa-scale-balanced"></i>
+        </div>
+        <div>
+          <h1 class="text-lg md:text-2xl font-black text-slate-900 tracking-wide">同分母分數比大小特訓營</h1>
+          <p class="text-xs md:text-sm text-slate-500 font-bold">左右看分數 ➔ 操作畫出量 ➔ 比較大與小</p>
+        </div>
+      </div>
+
+      <!-- 右側輔助功能 -->
+      <div class="flex items-center gap-2">
+        <button id="btnSound" onclick="toggleSound()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl flex items-center gap-1 transition text-xs md:text-sm border border-slate-300 min-h-[40px]">
+          <i class="fa-solid fa-volume-high text-indigo-600" id="soundIcon"></i>
+          <span class="hidden sm:inline">聲音</span>
+        </button>
+        <button onclick="resetCurrentQuestion()" class="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded-xl flex items-center gap-1 transition text-xs md:text-sm border border-amber-300 min-h-[40px]">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>重來</span>
+        </button>
+        <button onclick="nextQuestion()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center gap-1 shadow transition text-xs md:text-sm min-h-[40px]">
+          <i class="fa-solid fa-shuffle"></i>
+          <span>下一題</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 三大單元切換頁籤 -->
+    <div class="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full xl:w-auto justify-center gap-1 overflow-x-auto">
+      <button id="tabModule1" onclick="switchModule(1)" class="px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-black transition flex items-center gap-1.5 bg-indigo-600 text-white shadow whitespace-nowrap min-h-[40px]">
+        <i class="fa-solid fa-layer-group text-amber-300"></i> 一、假分數 vs 假分數
+      </button>
+      <button id="tabModule2" onclick="switchModule(2)" class="px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-black transition flex items-center gap-1.5 text-slate-600 hover:bg-slate-200 whitespace-nowrap min-h-[40px]">
+        <i class="fa-solid fa-cubes text-emerald-500"></i> 二、帶分數 vs 帶分數
+      </button>
+      <button id="tabModule3" onclick="switchModule(3)" class="px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-black transition flex items-center gap-1.5 text-slate-600 hover:bg-slate-200 whitespace-nowrap min-h-[40px]">
+        <i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i> 三、假分數與帶分數混合
+      </button>
+    </div>
+  </header>
+
+  <!-- 學習步驟導引列 -->
+  <section class="bg-indigo-950 text-white rounded-2xl p-3 md:p-4 mb-3 shadow-sm border-b-4 border-indigo-900">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs md:text-sm">
+      <div id="step1Indicator" class="flex items-center gap-2 bg-indigo-800/80 px-3 py-2 rounded-xl border border-indigo-600/50">
+        <span class="w-6 h-6 rounded-full bg-amber-400 text-indigo-950 font-black text-xs flex items-center justify-center shrink-0">1</span>
+        <span class="font-bold">第一步：觀察左右呈現的分數數值</span>
+      </div>
+      <div id="step2Indicator" class="flex items-center gap-2 bg-indigo-900/60 px-3 py-2 rounded-xl border border-indigo-700/50">
+        <span class="w-6 h-6 rounded-full bg-indigo-700 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+        <span class="font-bold">第二步：平分並塗色做出左右分數的量</span>
+      </div>
+      <div id="step3Indicator" class="flex items-center gap-2 bg-indigo-900/60 px-3 py-2 rounded-xl border border-indigo-700/50">
+        <span class="w-6 h-6 rounded-full bg-indigo-700 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+        <span class="font-bold">第三步：比較左右的量，選出正確符號</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主內容區：左右分數操作畫布 + 中間比大小決策區 -->
+  <main class="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4 flex-1">
+
+    <!-- ==================== 左側分數與圖形區 (5/12) ==================== -->
+    <section class="lg:col-span-5 bg-white rounded-2xl p-3 md:p-4 shadow-sm border-2 border-indigo-300 flex flex-col justify-between">
+      <div>
+        <!-- 第一步：左分數數值卡片 -->
+        <div class="bg-indigo-50 p-3 rounded-2xl border border-indigo-200 flex items-center justify-between mb-3">
+          <span class="text-xs md:text-sm font-black text-indigo-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-align-left text-indigo-600"></i> 左邊分數
+          </span>
+          <!-- 左分數展示 -->
+          <div id="leftFractionDisplay" class="flex items-center gap-2 font-black text-2xl md:text-3xl text-indigo-900">
+            <!-- JS 動態生成 -->
+          </div>
+        </div>
+
+        <!-- 第二步：左圖形控制與操作區 -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-black text-slate-600">平分成：</span>
+            <button onclick="changePartition('left', -1)" class="w-7 h-7 bg-white hover:bg-slate-200 rounded-lg font-black text-slate-700 shadow-sm border border-slate-300 flex items-center justify-center">-</button>
+            <span id="leftPartitionText" class="font-black text-indigo-700 min-w-[24px] text-center text-sm">1</span>
+            <button onclick="changePartition('left', 1)" class="w-7 h-7 bg-white hover:bg-slate-200 rounded-lg font-black text-slate-700 shadow-sm border border-slate-300 flex items-center justify-center">+</button>
+            <span class="text-xs font-bold text-slate-500">等份</span>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button onclick="addUnit('left')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs border border-indigo-200">
+              <i class="fa-solid fa-plus"></i> 整體
+            </button>
+            <button onclick="removeUnit('left')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-xs border border-rose-200">
+              <i class="fa-solid fa-minus"></i> 減少
+            </button>
+          </div>
+        </div>
+
+        <!-- 左 SVG 圖形容器 -->
+        <div id="leftCanvasContainer" class="canvas-scroll min-h-[180px] max-h-[260px] overflow-y-auto bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 flex flex-wrap items-center justify-center p-3 gap-3 content-start">
+          <!-- JS 動態生成可點擊 SVG -->
+        </div>
+      </div>
+
+      <!-- 左側狀態與快捷鍵 -->
+      <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+        <button onclick="clearSlices('left')" class="text-slate-500 hover:text-slate-700 flex items-center gap-1">
+          <i class="fa-solid fa-eraser"></i> 重填左邊
+        </button>
+        <span id="leftShadedInfo" class="bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full font-black">
+          已塗色：0 塊
+        </span>
+      </div>
+    </section>
+
+    <!-- ==================== 中間比大小決策區 (2/12) ==================== -->
+    <section class="lg:col-span-2 bg-gradient-to-b from-amber-50 to-orange-50 rounded-2xl p-3 md:p-4 shadow-sm border-2 border-amber-300 flex flex-col items-center justify-between gap-3">
+      
+      <div class="text-center w-full">
+        <span class="text-xs font-black text-amber-900 bg-amber-200 px-3 py-1 rounded-full border border-amber-300 inline-block mb-2">
+          第三步：比較大小
+        </span>
+        <p class="text-xs font-bold text-slate-600">比較左右兩邊作出的量與數值</p>
+      </div>
+
+      <!-- 比大小顯示框與符號 -->
+      <div class="my-auto flex flex-col items-center gap-3 w-full">
+        <div id="selectedSymbolBox" class="w-20 h-20 bg-white rounded-2xl border-4 border-amber-400 shadow-md flex items-center justify-center text-4xl md:text-5xl font-black text-amber-600 transition">
+          ?
+        </div>
+
+        <!-- 大於、等於、小於 按鈕組 -->
+        <div class="grid grid-cols-3 lg:grid-cols-1 gap-2 w-full max-w-[160px]">
+          <button id="btnGreater" onclick="selectSymbol('>')" class="py-2.5 px-3 bg-white hover:bg-amber-100 text-amber-900 font-black text-xl rounded-xl border-2 border-amber-300 shadow-sm transition active:scale-95 flex items-center justify-center gap-1">
+            <span>&gt;</span>
+            <span class="text-xs font-bold text-amber-700 hidden lg:inline">(大於)</span>
+          </button>
+          <button id="btnEqual" onclick="selectSymbol('=')" class="py-2.5 px-3 bg-white hover:bg-amber-100 text-amber-900 font-black text-xl rounded-xl border-2 border-amber-300 shadow-sm transition active:scale-95 flex items-center justify-center gap-1">
+            <span>=</span>
+            <span class="text-xs font-bold text-amber-700 hidden lg:inline">(等於)</span>
+          </button>
+          <button id="btnLess" onclick="selectSymbol('<')" class="py-2.5 px-3 bg-white hover:bg-amber-100 text-amber-900 font-black text-xl rounded-xl border-2 border-amber-300 shadow-sm transition active:scale-95 flex items-center justify-center gap-1">
+            <span>&lt;</span>
+            <span class="text-xs font-bold text-amber-700 hidden lg:inline">(小於)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 檢查答案按鈕 -->
+      <button onclick="checkAnswer()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm md:text-base rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1 min-h-[44px]">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>檢查答案 ✅</span>
+      </button>
+
+    </section>
+
+    <!-- ==================== 右側分數與圖形區 (5/12) ==================== -->
+    <section class="lg:col-span-5 bg-white rounded-2xl p-3 md:p-4 shadow-sm border-2 border-emerald-300 flex flex-col justify-between">
+      <div>
+        <!-- 第一步：右分數數值卡片 -->
+        <div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-200 flex items-center justify-between mb-3">
+          <span class="text-xs md:text-sm font-black text-emerald-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-align-right text-emerald-600"></i> 右邊分數
+          </span>
+          <!-- 右分數展示 -->
+          <div id="rightFractionDisplay" class="flex items-center gap-2 font-black text-2xl md:text-3xl text-emerald-900">
+            <!-- JS 動態生成 -->
+          </div>
+        </div>
+
+        <!-- 第二步：右圖形控制與操作區 -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-black text-slate-600">平分成：</span>
+            <button onclick="changePartition('right', -1)" class="w-7 h-7 bg-white hover:bg-slate-200 rounded-lg font-black text-slate-700 shadow-sm border border-slate-300 flex items-center justify-center">-</button>
+            <span id="rightPartitionText" class="font-black text-emerald-700 min-w-[24px] text-center text-sm">1</span>
+            <button onclick="changePartition('right', 1)" class="w-7 h-7 bg-white hover:bg-slate-200 rounded-lg font-black text-slate-700 shadow-sm border border-slate-300 flex items-center justify-center">+</button>
+            <span class="text-xs font-bold text-slate-500">等份</span>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button onclick="addUnit('right')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-xs border border-emerald-200">
+              <i class="fa-solid fa-plus"></i> 整體
+            </button>
+            <button onclick="removeUnit('right')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-xs border border-rose-200">
+              <i class="fa-solid fa-minus"></i> 減少
+            </button>
+          </div>
+        </div>
+
+        <!-- 右 SVG 圖形容器 -->
+        <div id="rightCanvasContainer" class="canvas-scroll min-h-[180px] max-h-[260px] overflow-y-auto bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 flex flex-wrap items-center justify-center p-3 gap-3 content-start">
+          <!-- JS 動態生成可點擊 SVG -->
+        </div>
+      </div>
+
+      <!-- 右側狀態與快捷鍵 -->
+      <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+        <button onclick="clearSlices('right')" class="text-slate-500 hover:text-slate-700 flex items-center gap-1">
+          <i class="fa-solid fa-eraser"></i> 重填右邊
+        </button>
+        <span id="rightShadedInfo" class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-black">
+          已塗色：0 塊
+        </span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 底部視覺圖形種類選單與說明 -->
+  <footer class="mt-3 bg-white rounded-2xl p-3 shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-slate-600">圖形外觀：</span>
+      <button id="btnPie" onclick="switchShape('pie')" class="px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 bg-indigo-600 text-white shadow">
+        <i class="fa-solid fa-chart-pie"></i> 圓形
+      </button>
+      <button id="btnBar" onclick="switchShape('bar')" class="px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 bg-slate-200 text-slate-700 hover:bg-slate-300">
+        <i class="fa-solid fa-square-poll-horizontal"></i> 長方形
+      </button>
+    </div>
+
+    <div class="text-slate-500 font-bold flex items-center gap-1">
+      <i class="fa-solid fa-lightbulb text-amber-500"></i>
+      <span>小提示：同分母分數比較時，把左右兩邊塗滿對應的量，就能一眼看出誰大誰小！</span>
+    </div>
+  </footer>
+
+  <!-- 答對讚美與解說 Modal -->
+  <div id="praiseModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border-4 border-amber-300 text-center transform scale-90 transition-transform duration-300" id="modalContent">
+      <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-500 text-3xl shadow-inner">
+        <i class="fa-solid fa-trophy animate-bounce"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-1">太棒了！完全正確！</h3>
+      <p class="text-xs md:text-sm font-bold text-slate-500 mb-4">你成功透過圖形量與分數比較出正確的大小囉！</p>
+      
+      <!-- 比大小概念圖卡與算式解析 -->
+      <div id="modalExplanationBox" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5 text-left text-xs md:text-sm text-slate-700 space-y-2 font-bold">
+        <!-- JS 動態生成對照與說明 -->
+      </div>
+
+      <button onclick="nextQuestion()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-base md:text-lg rounded-2xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2 min-h-[48px]">
+        <i class="fa-solid fa-arrow-right-long"></i>
+        <span>挑戰下一題</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // 1. 題庫與核心狀態 (分三大模組)
+    // -------------------------------------------------------------
+    
+    // 模組一：假分數 vs 假分數 (同分母)
+    const module1Questions = [
+      { id: '1-1', left: { type: 'improper', num: 7, den: 4 }, right: { type: 'improper', num: 5, den: 4 }, symbol: '>' },
+      { id: '1-2', left: { type: 'improper', num: 5, den: 3 }, right: { type: 'improper', num: 8, den: 3 }, symbol: '<' },
+      { id: '1-3', left: { type: 'improper', num: 9, den: 5 }, right: { type: 'improper', num: 6, den: 5 }, symbol: '>' },
+      { id: '1-4', left: { type: 'improper', num: 4, den: 2 }, right: { type: 'improper', num: 4, den: 2 }, symbol: '=' },
+      { id: '1-5', left: { type: 'improper', num: 6, den: 4 }, right: { type: 'improper', num: 7, den: 4 }, symbol: '<' }
+    ];
+
+    // 模組二：帶分數 vs 帶分數 (同分母)
+    const module2Questions = [
+      { id: '2-1', left: { type: 'mixed', whole: 1, num: 3, den: 4 }, right: { type: 'mixed', whole: 1, num: 1, den: 4 }, symbol: '>' },
+      { id: '2-2', left: { type: 'mixed', whole: 2, num: 1, den: 3 }, right: { type: 'mixed', whole: 1, num: 2, den: 3 }, symbol: '>' },
+      { id: '2-3', left: { type: 'mixed', whole: 1, num: 2, den: 5 }, right: { type: 'mixed', whole: 2, num: 1, den: 5 }, symbol: '<' },
+      { id: '2-4', left: { type: 'mixed', whole: 1, num: 4, den: 5 }, right: { type: 'mixed', whole: 1, num: 4, den: 5 }, symbol: '=' },
+      { id: '2-5', left: { type: 'mixed', whole: 2, num: 1, den: 4 }, right: { type: 'mixed', whole: 2, num: 3, den: 4 }, symbol: '<' }
+    ];
+
+    // 模組三：假分數與帶分數混合 (同分母)
+    const module3Questions = [
+      { id: '3-1', left: { type: 'mixed', whole: 1, num: 3, den: 4 }, right: { type: 'improper', num: 5, den: 4 }, symbol: '>' }, // 7/4 > 5/4
+      { id: '3-2', left: { type: 'improper', num: 7, den: 3 }, right: { type: 'mixed', whole: 2, num: 1, den: 3 }, symbol: '=' }, // 7/3 = 7/3
+      { id: '3-3', left: { type: 'improper', num: 9, den: 5 }, right: { type: 'mixed', whole: 1, num: 2, den: 5 }, symbol: '>' }, // 9/5 > 7/5
+      { id: '3-4', left: { type: 'mixed', whole: 1, num: 1, den: 2 }, right: { type: 'improper', num: 5, den: 2 }, symbol: '<' }, // 3/2 < 5/2
+      { id: '3-5', left: { type: 'improper', num: 6, den: 4 }, right: { type: 'mixed', whole: 1, num: 2, den: 4 }, symbol: '=' }  // 6/4 = 6/4
+    ];
+
+    let currentModule = 1;
+    let currentQIndex = 0;
+    let currentQuestion = null;
+    let currentShape = 'pie'; // 'pie' 或 'bar'
+    let isSoundOn = true;
+    let selectedSymbol = null; // '>', '=', '<'
+
+    // 左右兩邊的操作狀態
+    let state = {
+      left: { partition: 1, unitCount: 1, shaded: [] },
+      right: { partition: 1, unitCount: 1, shaded: [] }
+    };
+
+    // Web Audio API 音效
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+      if (!isSoundOn) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      const icon = document.getElementById('soundIcon');
+      icon.className = isSoundOn ? 'fa-solid fa-volume-high text-indigo-600' : 'fa-solid fa-volume-xmark text-slate-400';
+    }
+
+    // -------------------------------------------------------------
+    // 2. 初始化與題目載入
+    // -------------------------------------------------------------
+    window.onload = () => {
+      loadQuestion(0);
+    };
+
+    function switchModule(mod) {
+      currentModule = mod;
+
+      // 更新 Tab 樣式
+      for (let i = 1; i <= 3; i++) {
+        const btn = document.getElementById(`tabModule${i}`);
+        if (i === mod) {
+          btn.className = 'px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-black transition flex items-center gap-1.5 bg-indigo-600 text-white shadow whitespace-nowrap min-h-[40px]';
+        } else {
+          btn.className = 'px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-black transition flex items-center gap-1.5 text-slate-600 hover:bg-slate-200 whitespace-nowrap min-h-[40px]';
+        }
+      }
+
+      loadQuestion(0);
+    }
+
+    function getQuestionsForCurrentModule() {
+      if (currentModule === 1) return module1Questions;
+      if (currentModule === 2) return module2Questions;
+      return module3Questions;
+    }
+
+    function loadQuestion(index) {
+      closePraiseModal();
+      const qList = getQuestionsForCurrentModule();
+      currentQIndex = index % qList.length;
+      currentQuestion = qList[currentQIndex];
+
+      // 重置選擇符號
+      selectedSymbol = null;
+      updateSymbolUI();
+
+      // 重置左右兩邊狀態 (預設平分 1 份，1 個整體，無塗色)
+      state.left = { partition: 1, unitCount: 1, shaded: [new Array(1).fill(false)] };
+      state.right = { partition: 1, unitCount: 1, shaded: [new Array(1).fill(false)] };
+
+      // 渲染第一步：數值展示
+      renderFractionDisplays();
+
+      // 渲染第二步：圖形畫布與控制
+      renderCanvases();
+      updateInfoBadges();
+    }
+
+    function resetCurrentQuestion() {
+      loadQuestion(currentQIndex);
+    }
+
+    function nextQuestion() {
+      const qList = getQuestionsForCurrentModule();
+      let nextIdx = (currentQIndex + 1) % qList.length;
+      loadQuestion(nextIdx);
+    }
+
+    // -------------------------------------------------------------
+    // 3. 第一步：分數數值渲染 (支援假分數與帶分數直式呈現)
+    // -------------------------------------------------------------
+    function renderFractionDisplays() {
+      document.getElementById('leftFractionDisplay').innerHTML = generateFractionHTML(currentQuestion.left, 'text-indigo-600');
+      document.getElementById('rightFractionDisplay').innerHTML = generateFractionHTML(currentQuestion.right, 'text-emerald-600');
+    }
+
+    function generateFractionHTML(fracObj, colorClass) {
+      if (fracObj.type === 'improper') {
+        return `
+          <div class="flex flex-col items-center">
+            <span class="border-b-2 border-slate-700 pb-0.5 px-1 leading-none ${colorClass}">${fracObj.num}</span>
+            <span class="pt-0.5 px-1 leading-none ${colorClass}">${fracObj.den}</span>
+          </div>
+        `;
+      } else {
+        // 帶分數
+        return `
+          <div class="flex items-center gap-1.5">
+            <span class="text-3xl font-black text-purple-700">${fracObj.whole}</span>
+            <div class="flex flex-col items-center text-xl">
+              <span class="border-b-2 border-slate-700 pb-0.5 px-1 leading-none ${colorClass}">${fracObj.num}</span>
+              <span class="pt-0.5 px-1 leading-none ${colorClass}">${fracObj.den}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 4. 第二步：圖形操作邏輯與 SVG 繪製 (左邊 & 右邊)
+    // -------------------------------------------------------------
+    function changePartition(side, delta) {
+      const sideState = state[side];
+      const newP = sideState.partition + delta;
+      if (newP >= 1 && newP <= 12) {
+        sideState.partition = newP;
+        // 重新初始化塗色陣列
+        sideState.shaded = [];
+        for (let u = 0; u < sideState.unitCount; u++) {
+          sideState.shaded.push(new Array(newP).fill(false));
+        }
+        playBeep(500, 'sine', 0.05);
+        renderCanvases();
+        updateInfoBadges();
+      }
+    }
+
+    function addUnit(side) {
+      const sideState = state[side];
+      if (sideState.unitCount < 5) {
+        sideState.unitCount++;
+        sideState.shaded.push(new Array(sideState.partition).fill(false));
+        playBeep(550, 'sine', 0.05);
+        renderCanvases();
+        updateInfoBadges();
+      } else {
+        showToast('最多只能增加到 5 個整體喔！');
+      }
+    }
+
+    function removeUnit(side) {
+      const sideState = state[side];
+      if (sideState.unitCount > 1) {
+        sideState.unitCount--;
+        sideState.shaded.pop();
+        playBeep(400, 'sine', 0.05);
+        renderCanvases();
+        updateInfoBadges();
+      } else {
+        showToast('最少保留 1 個整體！');
+      }
+    }
+
+    function toggleSlice(side, unitIdx, sliceIdx) {
+      const sideState = state[side];
+      sideState.shaded[unitIdx][sliceIdx] = !sideState.shaded[unitIdx][sliceIdx];
+      playBeep(sideState.shaded[unitIdx][sliceIdx] ? 750 : 380, 'sine', 0.05);
+      renderCanvases();
+      updateInfoBadges();
+    }
+
+    function clearSlices(side) {
+      const sideState = state[side];
+      for (let u = 0; u < sideState.unitCount; u++) {
+        sideState.shaded[u].fill(false);
+      }
+      playBeep(300, 'sine', 0.08);
+      renderCanvases();
+      updateInfoBadges();
+    }
+
+    function switchShape(shape) {
+      currentShape = shape;
+      document.getElementById('btnPie').className = (shape === 'pie')
+        ? 'px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 bg-indigo-600 text-white shadow'
+        : 'px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 bg-slate-200 text-slate-700 hover:bg-slate-300';
+
+      document.getElementById('btnBar').className = (shape === 'bar')
+        ? 'px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 bg-indigo-600 text-white shadow'
+        : 'px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 bg-slate-200 text-slate-700 hover:bg-slate-300';
+
+      renderCanvases();
+    }
+
+    function renderCanvases() {
+      document.getElementById('leftPartitionText').textContent = state.left.partition;
+      document.getElementById('rightPartitionText').textContent = state.right.partition;
+
+      renderSingleCanvas('left', 'leftCanvasContainer', '#f59e0b');
+      renderSingleCanvas('right', 'rightCanvasContainer', '#10b981');
+    }
+
+    function renderSingleCanvas(side, containerId, activeColor) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      const sideState = state[side];
+
+      for (let u = 0; u < sideState.unitCount; u++) {
+        const unitBox = document.createElement('div');
+        unitBox.className = 'flex flex-col items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm';
+
+        if (currentShape === 'pie') {
+          unitBox.appendChild(createPieSVG(side, u, sideState.partition, activeColor));
+        } else {
+          unitBox.appendChild(createBarSVG(side, u, sideState.partition, activeColor));
+        }
+
+        container.appendChild(unitBox);
+      }
+    }
+
+    function createPieSVG(side, unitIdx, den, activeColor) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '110');
+      svg.setAttribute('height', '110');
+      svg.setAttribute('viewBox', '0 0 100 100');
+
+      const cx = 50, cy = 50, r = 42;
+
+      for (let i = 0; i < den; i++) {
+        const startAngle = (i * 360 / den) - 90;
+        const endAngle = ((i + 1) * 360 / den) - 90;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const x1 = cx + r * Math.cos(Math.PI * startAngle / 180);
+        const y1 = cy + r * Math.sin(Math.PI * startAngle / 180);
+        const x2 = cx + r * Math.cos(Math.PI * endAngle / 180);
+        const y2 = cy + r * Math.sin(Math.PI * endAngle / 180);
+
+        const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+        const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+        const isFilled = state[side].shaded[unitIdx] && state[side].shaded[unitIdx][i];
+
+        path.setAttribute('d', d);
+        path.setAttribute('fill', isFilled ? activeColor : '#ffffff');
+        path.setAttribute('stroke', '#334155');
+        path.setAttribute('stroke-width', '1.8');
+        path.setAttribute('class', 'slice-path');
+
+        path.onclick = () => toggleSlice(side, unitIdx, i);
+
+        svg.appendChild(path);
+      }
+
+      const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      outer.setAttribute('cx', cx); outer.setAttribute('cy', cy); outer.setAttribute('r', r);
+      outer.setAttribute('fill', 'none'); outer.setAttribute('stroke', '#0f172a'); outer.setAttribute('stroke-width', '2.5');
+      outer.style.pointerEvents = 'none';
+      svg.appendChild(outer);
+
+      return svg;
+    }
+
+    function createBarSVG(side, unitIdx, den, activeColor) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '130');
+      svg.setAttribute('height', '75');
+      svg.setAttribute('viewBox', '0 0 130 75');
+
+      const x = 8, y = 10, width = 114, height = 55;
+      const cellWidth = width / den;
+
+      for (let i = 0; i < den; i++) {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', x + i * cellWidth);
+        rect.setAttribute('y', y);
+        rect.setAttribute('width', cellWidth);
+        rect.setAttribute('height', height);
+
+        const isFilled = state[side].shaded[unitIdx] && state[side].shaded[unitIdx][i];
+
+        rect.setAttribute('fill', isFilled ? activeColor : '#ffffff');
+        rect.setAttribute('stroke', '#334155');
+        rect.setAttribute('stroke-width', '1.8');
+        rect.setAttribute('class', 'slice-path');
+
+        rect.onclick = () => toggleSlice(side, unitIdx, i);
+
+        svg.appendChild(rect);
+      }
+
+      const outer = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      outer.setAttribute('x', x); outer.setAttribute('y', y);
+      outer.setAttribute('width', width); outer.setAttribute('height', height);
+      outer.setAttribute('fill', 'none'); outer.setAttribute('stroke', '#0f172a'); outer.setAttribute('stroke-width', '2.5');
+      outer.setAttribute('rx', '3');
+      outer.style.pointerEvents = 'none';
+      svg.appendChild(outer);
+
+      return svg;
+    }
+
+    function getShadedCount(side) {
+      let count = 0;
+      const sideState = state[side];
+      for (let u = 0; u < sideState.unitCount; u++) {
+        for (let s = 0; s < sideState.partition; s++) {
+          if (sideState.shaded[u][s]) count++;
+        }
+      }
+      return count;
+    }
+
+    function updateInfoBadges() {
+      const leftCount = getShadedCount('left');
+      const rightCount = getShadedCount('right');
+
+      document.getElementById('leftShadedInfo').textContent = `已塗色：${leftCount} 小塊 (等份: ${state.left.partition})`;
+      document.getElementById('rightShadedInfo').textContent = `已塗色：${rightCount} 小塊 (等份: ${state.right.partition})`;
+    }
+
+    // -------------------------------------------------------------
+    // 5. 第三步：選擇比較符號與解答驗證
+    // -------------------------------------------------------------
+    function selectSymbol(sym) {
+      selectedSymbol = sym;
+      playBeep(650, 'sine', 0.05);
+      updateSymbolUI();
+    }
+
+    function updateSymbolUI() {
+      const box = document.getElementById('selectedSymbolBox');
+      box.textContent = selectedSymbol ? selectedSymbol : '?';
+
+      const btnG = document.getElementById('btnGreater');
+      const btnE = document.getElementById('btnEqual');
+      const btnL = document.getElementById('btnLess');
+
+      btnG.classList.toggle('active-symbol-btn', selectedSymbol === '>');
+      btnE.classList.toggle('active-symbol-btn', selectedSymbol === '=');
+      btnL.classList.toggle('active-symbol-btn', selectedSymbol === '<');
+    }
+
+    // 計算分數對應總切片數 (以該分數的分母為基準)
+    function getTargetTotalSlices(fracObj) {
+      if (fracObj.type === 'improper') {
+        return fracObj.num;
+      } else {
+        return (fracObj.whole * fracObj.den) + fracObj.num;
+      }
+    }
+
+    function checkAnswer() {
+      const leftTarget = currentQuestion.left;
+      const rightTarget = currentQuestion.right;
+
+      const leftNeededSlices = getTargetTotalSlices(leftTarget);
+      const rightNeededSlices = getTargetTotalSlices(rightTarget);
+
+      const leftUserSlices = getShadedCount('left');
+      const rightUserSlices = getShadedCount('right');
+
+      // 1. 檢查左邊平分與塗色
+      if (state.left.partition !== leftTarget.den) {
+        playBeep(250, 'sawtooth', 0.2);
+        showToast(`左邊圖形平分份數不對喔！分母是 ${leftTarget.den}，請平分成 ${leftTarget.den} 份。`);
+        return;
+      }
+
+      if (leftUserSlices !== leftNeededSlices) {
+        playBeep(250, 'sawtooth', 0.2);
+        showToast(`左邊塗色數量不對喔！需塗滿 ${leftNeededSlices} 個小塊，目前塗了 ${leftUserSlices} 塊。`);
+        return;
+      }
+
+      // 2. 檢查右邊平分與塗色
+      if (state.right.partition !== rightTarget.den) {
+        playBeep(250, 'sawtooth', 0.2);
+        showToast(`右邊圖形平分份數不對喔！分母是 ${rightTarget.den}，請平分成 ${rightTarget.den} 份。`);
+        return;
+      }
+
+      if (rightUserSlices !== rightNeededSlices) {
+        playBeep(250, 'sawtooth', 0.2);
+        showToast(`右邊塗色數量不對喔！需塗滿 ${rightNeededSlices} 個小塊，目前塗了 ${rightUserSlices} 塊。`);
+        return;
+      }
+
+      // 3. 檢查比較符號
+      if (!selectedSymbol) {
+        playBeep(250, 'sawtooth', 0.2);
+        showToast('請點擊中間的大於 ( > )、等於 ( = ) 或小於 ( < ) 按鈕！');
+        return;
+      }
+
+      if (selectedSymbol !== currentQuestion.symbol) {
+        playBeep(220, 'sawtooth', 0.25);
+        showToast(`符號選錯囉！觀察左右兩邊塗滿的量，左邊是 ${leftUserSlices} 塊，右邊是 ${rightUserSlices} 塊。`);
+        return;
+      }
+
+      // 全部正確！
+      playBeep(880, 'sine', 0.3);
+      triggerPraiseModal(leftNeededSlices, rightNeededSlices);
+    }
+
+    // -------------------------------------------------------------
+    // 6. 讚美 Modal 與教學解說
+    // -------------------------------------------------------------
+    function triggerPraiseModal(leftSlices, rightSlices) {
+      const modal = document.getElementById('praiseModal');
+      const content = document.getElementById('modalContent');
+      const explBox = document.getElementById('modalExplanationBox');
+
+      const { left, right, symbol } = currentQuestion;
+
+      let symText = symbol === '>' ? '大於' : (symbol === '<' ? '小於' : '等於');
+
+      explBox.innerHTML = `
+        <div class="flex items-center justify-center gap-3 text-lg md:text-xl font-black mb-2 bg-indigo-50 p-2 rounded-xl border border-indigo-200">
+          <div>${generateFractionHTML(left, 'text-indigo-600')}</div>
+          <span class="text-amber-600 text-2xl font-black px-2">${symbol}</span>
+          <div>${generateFractionHTML(right, 'text-emerald-600')}</div>
+        </div>
+        <p class="text-slate-700 leading-relaxed">
+          💡 <strong>觀念解析：</strong><br>
+          • 兩邊分母都是 <span class="text-indigo-600 font-black">${left.den}</span>，表示每個整體都平分成 <span class="text-indigo-600 font-black">${left.den}</span> 份。<br>
+          • 左邊共代表 <span class="text-indigo-600 font-black">${leftSlices}</span> 個小區塊。<br>
+          • 右邊共代表 <span class="text-emerald-600 font-black">${rightSlices}</span> 個小區塊。<br>
+          • 因為 <span class="text-indigo-600 font-black">${leftSlices}</span> ${symbol} <span class="text-emerald-600 font-black">${rightSlices}</span>，所以左邊分數 <strong>${symText}</strong> 右邊分數！
+        </p>
+      `;
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-90');
+        content.classList.add('scale-100');
+      }, 50);
+    }
+
+    function closePraiseModal() {
+      const modal = document.getElementById('praiseModal');
+      const content = document.getElementById('modalContent');
+      modal.classList.add('opacity-0');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-90');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300);
+    }
+
+    function showToast(msg) {
+      let toast = document.createElement('div');
+      toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white font-bold text-xs md:text-sm px-4 py-3 rounded-2xl shadow-xl z-50 flex items-center gap-2 max-w-md text-center border border-slate-700 animate-bounce";
+      toast.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400 text-base"></i> <span>${msg}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.remove();
+      }, 3200);
+    }
+  </script>
+</body>
+</html>
